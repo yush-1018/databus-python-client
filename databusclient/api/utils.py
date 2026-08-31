@@ -71,3 +71,29 @@ def compute_sha256_and_length(filepath):
             sha256.update(chunk)
             total_length += len(chunk)
     return sha256.hexdigest(), total_length
+
+
+def validate_databus_version_uri(uri: str) -> None:
+    """Validate a Databus version URI format.
+
+    Expects format: http(s)://<HOST>/<ACCOUNT>/<GROUP>/<ARTIFACT>/<VERSION>
+
+    Raises:
+        ValueError: If URI scheme, host, or path segments are invalid or missing.
+    """
+    if not uri or not isinstance(uri, str):
+        raise ValueError("Databus version_id must be a non-empty string.")
+
+    if not (uri.startswith("http://") or uri.startswith("https://")):
+        raise ValueError(
+            f"Invalid version_id URI scheme: '{uri}'. Must start with 'http://' or 'https://'."
+        )
+
+    stripped_uri = uri.removeprefix("https://").removeprefix("http://").strip("/")
+    parts = stripped_uri.split("/")
+
+    if len(parts) != 5 or any(not part or part.strip() == "" for part in parts):
+        raise ValueError(
+            f"Invalid version_id format: '{uri}'. Expected format: <BASE>/<ACCOUNT>/<GROUP>/<ARTIFACT>/<VERSION>"
+        )
+
