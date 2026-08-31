@@ -148,6 +148,8 @@ def test_version_id_uri_validation():
         "databus.dbpedia.org/user/group/artifact/1.0.0",  # missing scheme
         "https://databus.dbpedia.org/user/group/artifact",  # missing version part
         "https://databus.dbpedia.org/user//artifact/1.0.0",  # empty group part
+        "https://databus.dbpedia.org/user/group/artifact/1.0.0/",  # trailing slash
+        "https://databus.dbpedia.org/user/gr oup/artifact/1.0.0",  # component containing space
     ]
     for invalid_uri in invalid_uris:
         with pytest.raises(BadArgumentException):
@@ -159,4 +161,5 @@ def test_version_id_uri_validation():
                 license_url="https://dalicc.net/licenses/cc-by-4.0",
                 distributions=[],
             )
+
 
