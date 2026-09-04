@@ -8,6 +8,7 @@ import click
 import databusclient.api.deploy as api_deploy
 from databusclient.api.delete import delete as api_delete
 from databusclient.api.download import download as api_download, DownloadAuthError
+from databusclient.api.utils import get_http_session
 from databusclient.manifest.context import ManifestContext
 from databusclient.manifest.writer import ManifestWriter
 from databusclient.manifest.replay import ManifestReplayError, replay_manifest, load_manifest
@@ -191,7 +192,15 @@ def deploy(
                 manifest_context.replay_params["deploy_mode"] = "metadata"
                 manifest_context.replay_params["resolved_metadata"] = metadata
             api_deploy.deploy_from_metadata(
-                metadata, version_id, title, abstract, description, license_url, apikey
+                metadata,
+                version_id,
+                title,
+                abstract,
+                description,
+                license_url,
+                apikey,
+                session=session,
+                timeout=request_timeout,
             )
             if manifest_context:
                 for entry in metadata:
@@ -227,7 +236,15 @@ def deploy(
         try:
             metadata = webdav.upload_to_webdav(distributions, remote, path, webdav_url)
             api_deploy.deploy_from_metadata(
-                metadata, version_id, title, abstract, description, license_url, apikey
+                metadata,
+                version_id,
+                title,
+                abstract,
+                description,
+                license_url,
+                apikey,
+                session=session,
+                timeout=request_timeout,
             )
             if manifest_context:
                 for entry in metadata:
@@ -475,7 +492,7 @@ def delete(
             "dry_run": dry_run,
         })
 
-    session = api_delete.get_http_session(retries=retries)
+    session = get_http_session(retries=retries)
     try:
         api_delete(
             databusURIs=databusuris,
