@@ -326,6 +326,13 @@ def deploy(
     "--user-agent",
     help="Override the HTTP User-Agent header for file download requests.",
 )
+@click.option(
+    "--resume",
+    "-c",
+    is_flag=True,
+    default=False,
+    help="Resume partially downloaded files using HTTP Range requests.",
+)
 def download(
     databusuris: List[str],
     localdir,
@@ -343,6 +350,7 @@ def download(
     validate_checksum,
     manifest_path,
     user_agent,
+    resume,
 ):
     """
     Download datasets from databus, optionally using vault access if vault options are provided.
@@ -375,6 +383,7 @@ def download(
             "user_agent": user_agent,
             "authurl": authurl,
             "clientid": clientid,
+            "resume": resume,
         })
     try:
         api_download(
@@ -394,6 +403,7 @@ def download(
             validate_checksum=validate_checksum,
             user_agent=user_agent,
             manifest_context=manifest_context,
+            resume=resume,
         )
     except DownloadAuthError as e:
         if manifest_context:
