@@ -95,13 +95,13 @@ def fetch_databus_jsonld(
     Returns:
         The response body as a string containing JSON-LD.
     """
-    if session is None:
-        session = get_http_session()
-
     headers = {"Accept": "application/ld+json"}
     if databus_key is not None:
         headers["X-API-KEY"] = databus_key
-    response = session.get(uri, headers=headers, timeout=timeout)
+    if session is not None:
+        response = session.get(uri, headers=headers, timeout=timeout)
+    else:
+        response = requests.get(uri, headers=headers, timeout=timeout)
     response.raise_for_status()
 
     return response.text

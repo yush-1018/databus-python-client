@@ -166,10 +166,14 @@ def deploy(
                 artifact_version_description=description,
                 license_url=license_url,
                 distributions=distributions,
+                session=session,
+                timeout=request_timeout,
             )
             if manifest_context:
                 manifest_context.replay_params["deploy_mode"] = "classic"
                 manifest_context.replay_params["resolved_distributions"] = dataid["@graph"][-1].get("distribution", [])
+                manifest_context.replay_params["retries"] = retries
+                manifest_context.replay_params["request_timeout"] = request_timeout
             api_deploy.deploy(dataid=dataid, api_key=apikey, session=session, timeout=request_timeout)
             if manifest_context:
                 for dist in distributions:
@@ -192,6 +196,8 @@ def deploy(
             if manifest_context:
                 manifest_context.replay_params["deploy_mode"] = "metadata"
                 manifest_context.replay_params["resolved_metadata"] = metadata
+                manifest_context.replay_params["retries"] = retries
+                manifest_context.replay_params["request_timeout"] = request_timeout
             api_deploy.deploy_from_metadata(
                 metadata, version_id, title, abstract, description, license_url, apikey, session=session, timeout=request_timeout
             )
@@ -226,6 +232,8 @@ def deploy(
         click.echo(f"→ Uploading to: {remote}:{path}")
         if manifest_context:
             manifest_context.replay_params["deploy_mode"] = "webdav"
+            manifest_context.replay_params["retries"] = retries
+            manifest_context.replay_params["request_timeout"] = request_timeout
         try:
             metadata = webdav.upload_to_webdav(distributions, remote, path, webdav_url)
             api_deploy.deploy_from_metadata(
@@ -501,6 +509,8 @@ def delete(
         manifest_context.record_params({
             "databusURIs": list(databusuris),
             "dry_run": dry_run,
+            "retries": retries,
+            "request_timeout": request_timeout,
         })
 
     session = get_http_session(retries=retries)

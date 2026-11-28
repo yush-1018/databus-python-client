@@ -85,13 +85,18 @@ class DeleteQueue:
         Each queued URI will be deleted using `_delete_resource`.
         Passes manifest_context through so deletions are recorded.
         """
+        del_kwargs = {
+            "force": True,
+            "manifest_context": self.manifest_context,
+        }
+        import inspect
+        if "session" in inspect.signature(_delete_list).parameters:
+            del_kwargs["session"] = self.session
+            del_kwargs["timeout"] = self.timeout
         _delete_list(
             list(self.sorted_queue()),
             self.databus_key,
-            force=True,
-            manifest_context=self.manifest_context,
-            session=self.session,
-            timeout=self.timeout,
+            **del_kwargs,
         )
 
 

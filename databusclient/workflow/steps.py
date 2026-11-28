@@ -19,6 +19,7 @@ from databusclient.api.deploy import (
     deploy_from_metadata,
 )
 from databusclient.api.download import download as api_download
+from databusclient.api.utils import get_http_session
 from databusclient.extensions import webdav
 from databusclient.manifest.context import ManifestContext
 
@@ -183,15 +184,29 @@ class DeployStep:
                 f"'path') to deploy locally modified files."
             )
 
-        dataid = create_dataset(
-            version_id=resolved["version_id"],
-            artifact_version_title=resolved["title"],
-            artifact_version_abstract=resolved["abstract"],
-            artifact_version_description=resolved["description"],
-            license_url=resolved["license"],
-            distributions=files,
-        )
-        api_deploy_call(dataid=dataid, api_key=resolved["api_key"])
+        retries = int(resolved.get("retries", 3))
+        timeout = int(resolved.get("timeout", 30))
+        session = get_http_session(retries=retries)
+
+        import inspect
+        dataid_kwargs = {
+            "version_id": resolved["version_id"],
+            "artifact_version_title": resolved["title"],
+            "artifact_version_abstract": resolved["abstract"],
+            "artifact_version_description": resolved["description"],
+            "license_url": resolved["license"],
+            "distributions": files,
+        }
+        if "session" in inspect.signature(create_dataset).parameters:
+            dataid_kwargs["session"] = session
+            dataid_kwargs["timeout"] = timeout
+        dataid = create_dataset(**dataid_kwargs)
+
+        deploy_kwargs = {"dataid": dataid, "api_key": resolved["api_key"]}
+        if "session" in inspect.signature(api_deploy_call).parameters:
+            deploy_kwargs["session"] = session
+            deploy_kwargs["timeout"] = timeout
+        api_deploy_call(**deploy_kwargs)
         return files
 
     def _run_webdav_mode(self, resolved: Dict[str, Any], name: str) -> list:
@@ -207,15 +222,33 @@ class DeployStep:
         metadata = webdav.upload_to_webdav(
             local_files, resolved["remote"], resolved["path"], resolved["webdav_url"]
         )
-        deploy_from_metadata(
-            metadata,
-            resolved["version_id"],
-            resolved["title"],
-            resolved["abstract"],
-            resolved["description"],
-            resolved["license"],
-            resolved["api_key"],
-        )
+        retries = int(resolved.get("retries", 3))
+        timeout = int(resolved.get("timeout", 30))
+        session = get_http_session(retries=retries)
+
+        import inspect
+        if "session" in inspect.signature(deploy_from_metadata).parameters:
+            deploy_from_metadata(
+                metadata,
+                resolved["version_id"],
+                resolved["title"],
+                resolved["abstract"],
+                resolved["description"],
+                resolved["license"],
+                resolved["api_key"],
+                session=session,
+                timeout=timeout,
+            )
+        else:
+            deploy_from_metadata(
+                metadata,
+                resolved["version_id"],
+                resolved["title"],
+                resolved["abstract"],
+                resolved["description"],
+                resolved["license"],
+                resolved["api_key"],
+            )
         return [entry.get("url", "") for entry in metadata]
 
 
@@ -242,12 +275,18 @@ class DeleteStep:
         if not api_key:
             raise StepValidationError(f"Step '{name}': delete step requires 'api_key'.")
 
+        retries = int(resolved.get("retries", 3))
+        timeout = int(resolved.get("timeout", 30))
+        session = get_http_session(retries=retries)
+
         api_delete(
             databusURIs=uris,
             databus_key=api_key,
             dry_run=resolved.get("dry_run", False),
             force=True,
             manifest_context=context.manifest_context,
+            session=session,
+            timeout=timeout,
         )
 
         context.set_output(name, "output_files", [])

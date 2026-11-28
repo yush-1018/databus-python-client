@@ -197,7 +197,11 @@ def _load_file_stats(
     return sha256sum, content_length
 
 
-def get_file_info(distribution_str: str) -> Tuple[Dict[str, str], str, str, str, int]:
+def get_file_info(
+    distribution_str: str,
+    session: requests.Session | None = None,
+    timeout: int = 30,
+) -> Tuple[Dict[str, str], str, str, str, int]:
     """Return parsed file information for a distribution string.
 
     Returns a tuple `(cvs, format_extension, compression, sha256sum, size)`.
@@ -215,7 +219,9 @@ def get_file_info(distribution_str: str) -> Tuple[Dict[str, str], str, str, str,
 
     if sha256sum is None or content_length is None:
         __url = str(distribution_str).split("|")[0]
-        sha256sum, content_length = _load_file_stats(__url)
+        sha256sum, content_length = _load_file_stats(
+            __url, session=session, timeout=timeout
+        )
 
     return cvs, format_extension, compression, sha256sum, content_length
 
@@ -325,6 +331,8 @@ def create_dataset(
     group_title: str = None,
     group_abstract: str = None,
     group_description: str = None,
+    session: requests.Session | None = None,
+    timeout: int = 30,
 ) -> Dict[str, Union[List[Dict[str, Union[bool, str, int, float, List]]], str]]:
     """
     Creates a Databus Dataset as a python dict from distributions and submitted metadata. WARNING: If file stats (sha256sum, content length)
@@ -381,7 +389,7 @@ def create_dataset(
             compression,
             sha256sum,
             content_length,
-        ) = get_file_info(dst_string)
+        ) = get_file_info(dst_string, session=session, timeout=timeout)
 
         if not cvs and len(distributions) > 1:
             raise BadArgumentException(
